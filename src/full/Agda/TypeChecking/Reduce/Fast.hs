@@ -295,7 +295,7 @@ reduceTm env !constInfo allowNonTerminating hasRewriting zero suc = reduceB' 0
         Con c ci vs ->
           -- Constructors can reduce' when they come from an
           -- instantiated module.
-          case unfoldDefinitionE steps False reduceB' (Con c ci []) (conName c) vs of
+          case runReduce $ reduceIApp vs $ return $ unfoldDefinitionE steps False reduceB' (Con c ci []) (conName c) vs of
             NotBlocked r v -> NotBlocked r $ reduceNat v
             b              -> b
         Lit{} -> done

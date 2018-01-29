@@ -372,19 +372,21 @@ pathViewAsPi t = either (Left . fst) Right <$> pathViewAsPi' t
 
 pathViewAsPi' :: Type -> TCM (Either ((Dom Type, Abs Type), (Term,Term)) Type)
 pathViewAsPi' t = do
-  pathViewAsPi'whnf =<< reduce t
+  pathViewAsPi'whnf <*> reduce t
 
-pathViewAsPi'whnf :: Type -> TCM (Either ((Dom Type, Abs Type), (Term,Term)) Type)
-pathViewAsPi'whnf t = do
-  t <- pathView t
-  case t of
-    PathType s l p a x y -> do
+pathViewAsPi'whnf :: TCM (Type -> Either ((Dom Type, Abs Type), (Term,Term)) Type)
+pathViewAsPi'whnf = do
+  view <- pathView'
+  minterval  <- getBuiltin' builtinInterval
+  return $ \ t -> case view t of
+    PathType s l p a x y | Just interval <- minterval ->
       let name | Lam _ (Abs n _) <- unArg a = n
                | otherwise = "i"
-      i <- El Inf <$> primInterval
-      return $ Left $ ((defaultDom $ i, Abs name $ El (raise 1 s) $ raise 1 (unArg a) `apply` [defaultArg $ var 0]), (unArg x, unArg y))
+          i = El Inf interval
+      in
+        Left $ ((defaultDom $ i, Abs name $ El (raise 1 s) $ raise 1 (unArg a) `apply` [defaultArg $ var 0]), (unArg x, unArg y))
 
-    OType t    -> return $ Right t
+    _    -> Right t
 
 isPath :: Type -> TCM (Maybe (Dom Type, Abs Type))
 isPath t = either Just (const Nothing) <$> pathViewAsPi t
@@ -420,7 +422,7 @@ ifNotPiType = flip . ifPiType
 
 ifNotPiOrPathType :: MonadTCM tcm => Type -> (Type -> tcm a) -> (Dom Type -> Abs Type -> tcm a) -> tcm a
 ifNotPiOrPathType t no yes = do
-  ifPiType t yes (\ t -> either (uncurry yes . fst) (const $ no t) =<< liftTCM (pathViewAsPi'whnf t))
+  ifPiType t yes (\ t -> either (uncurry yes . fst) (const $ no t) =<< (liftTCM pathViewAsPi'whnf <*> pure t))
 
 
 -- | A safe variant of piApply.

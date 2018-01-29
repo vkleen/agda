@@ -1006,11 +1006,16 @@ argFromElim (Apply u) = u
 argFromElim Proj{}    = __IMPOSSIBLE__
 argFromElim (IApply _ _ r) = defaultArg r -- losing information
 
+argFromElim_ :: Empty -> Elim' a -> Arg a
+argFromElim_ _ (Apply u) = u
+argFromElim_ e Proj{}    = absurd e
+argFromElim_ _ (IApply _ _ r) = defaultArg r -- losing information
+
 -- | Drop 'Apply' constructor. (Safe)
 isApplyElim :: Elim' a -> Maybe (Arg a)
 isApplyElim (Apply u) = Just u
 isApplyElim Proj{}    = Nothing
-isApplyElim (IApply _ _ r)    = Just (defaultArg r)  -- losing information
+isApplyElim (IApply _ _ r) = Nothing
 
 isApplyElim' :: Empty -> Elim' a -> Arg a
 isApplyElim' e = fromMaybe (absurd e) . isApplyElim

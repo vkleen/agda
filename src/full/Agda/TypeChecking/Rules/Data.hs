@@ -605,10 +605,13 @@ constructs nofPars t q = constrT 0 t
         constrT :: Nat -> Type -> TCM ()
         constrT n t = do
             t <- reduce t
+            pathV <- pathViewAsPi'whnf
             case ignoreSharing $ unEl t of
                 Pi _ (NoAbs _ b)  -> constrT n b
                 Pi a b            -> underAbstraction a b $ constrT (n + 1)
                   -- OR: addCxtString (absName b) a $ constrT (n + 1) (absBody b)
+                _ | Left ((a,b),_) <- pathV t -> -- TODO, do the special casing like for Pi
+                      underAbstraction a b $ constrT (n + 1)
                 Def d es | d == q -> do
                   let vs = fromMaybe __IMPOSSIBLE__ $ allApplyElims es
                   (pars, ixs) <- normalise $ splitAt nofPars vs

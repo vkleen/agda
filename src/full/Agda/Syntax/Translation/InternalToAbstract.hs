@@ -416,7 +416,7 @@ reifyTerm expandAnonDefs0 v = do
           when (n > np) __IMPOSSIBLE__
           let h = A.Con (unambiguous x)
           if null vs then return h else do
-            es <- reify (fromMaybe __IMPOSSIBLE__ $ allApplyElims vs)
+            es <- reify (map (argFromElim_ __IMPOSSIBLE__) vs)
             -- Andreas, 2012-04-20: do not reify parameter arguments of constructor
             -- if the first regular constructor argument is hidden
             -- we turn it into a named argument, in order to avoid confusion

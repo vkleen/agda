@@ -373,10 +373,10 @@ slowReduceTerm v = do
       MetaV x es -> iapp es
       Def f es   -> flip reduceIApply es $ unfoldDefinitionE False reduceB' (Def f []) f es
       Con c ci es -> do
-          let args = fromMaybe __IMPOSSIBLE__ $ allApplyElims es
           -- Constructors can reduce' when they come from an
           -- instantiated module.
-          v <- unfoldDefinition False reduceB' (Con c ci []) (conName c) args
+          v <- flip reduceIApply es
+                 $ unfoldDefinitionE False reduceB' (Con c ci []) (conName c) es
           traverse reduceNat v
       Sort s   -> fmap sortTm <$> reduceB' s
       Level l  -> ifM (elem LevelReductions <$> asks envAllowedReductions)
