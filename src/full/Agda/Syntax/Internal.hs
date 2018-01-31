@@ -1015,7 +1015,7 @@ argFromElim_ _ (IApply _ _ r) = defaultArg r -- losing information
 isApplyElim :: Elim' a -> Maybe (Arg a)
 isApplyElim (Apply u) = Just u
 isApplyElim Proj{}    = Nothing
-isApplyElim (IApply _ _ r) = Nothing
+isApplyElim (IApply _ _ r) = Just $ defaultArg r
 
 isApplyElim' :: Empty -> Elim' a -> Arg a
 isApplyElim' e = fromMaybe (absurd e) . isApplyElim
