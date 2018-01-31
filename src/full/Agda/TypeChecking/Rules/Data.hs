@@ -579,14 +579,21 @@ fitsIn forceds t s = do
   -- to be indexed by the universe level.
   -- s' <- instantiateFull (getSort t)
   -- noConstraints $ s' `leqSort` s
-  t <- reduce t
-  case ignoreSharing $ unEl t of
-    Pi dom b -> do
+
+
+  t <- pathViewAsPi t
+  t <- return $ case t of
+                  Left (a,b)     -> Just (True ,a,b)
+                  Right (El _ t) | Pi a b <- ignoreSharing t
+                                 -> Just (False,a,b)
+                  _              -> Nothing
+  case t of
+    Just (isPath, dom, b) -> do
       withoutK <- optWithoutK <$> pragmaOptions
       let (forced,forceds') = nextIsForced forceds
       unless (isForced forced && not withoutK) $ do
         sa <- reduce $ getSort dom
-        unless (sa == SizeUniv) $ sa `leqSort` s
+        unless (isPath || sa == SizeUniv) $ sa `leqSort` s
       addContext (absName b, dom) $ do
         succ <$> fitsIn forceds' (absBody b) (raise 1 s)
     _ -> return 0 -- getSort t `leqSort` s  -- Andreas, 2013-04-13 not necessary since constructor type ends in data type

@@ -388,6 +388,21 @@ pathViewAsPi'whnf = do
 
     _    -> Right t
 
+telView'UpToPath :: Int -> Type -> TCM TelView
+telView'UpToPath 0 t = return $ TelV EmptyTel t
+telView'UpToPath n t = do
+  vt <- pathViewAsPi'whnf <*> pure t
+  case vt of
+    Left ((a,b),_)     -> absV a (absName b) <$> telViewUpToPath (n - 1) (absBody b)
+    Right (El _ t) | Pi a b <- ignoreSharing t
+                   -> absV a (absName b) <$> telViewUpToPath (n - 1) (absBody b)
+    Right t        -> return $ TelV EmptyTel t
+  where
+    absV a x (TelV tel t) = TelV (ExtendTel a (Abs x tel)) t
+
+telView'Path :: Type -> TCM TelView
+telView'Path = telView'UpToPath (-1)
+
 isPath :: Type -> TCM (Maybe (Dom Type, Abs Type))
 isPath t = either Just (const Nothing) <$> pathViewAsPi t
 
