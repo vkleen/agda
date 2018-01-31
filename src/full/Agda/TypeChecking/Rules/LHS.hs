@@ -193,7 +193,7 @@ updateProblemEqs eqs = do
         -- we should only simplify equations between fully applied constructors
         contype <- getFullyAppliedConType c =<< reduce (unDom a)
         caseMaybe contype (return [eq]) $ \((d,_,pars),b) -> do
-        TelV ctel _ <- telView b
+        TelV ctel _ <- telViewPath b
         let bs = instTel ctel (map unArg vs)
 
         p <- expandLitPattern p
@@ -1035,7 +1035,7 @@ checkLHS mf st@(LHSState tel ip problem target psplit) = do
         _ -> return ()
 
       -- The type of the constructor will end in an application of the datatype
-      TelV gamma (El _ ctarget) <- liftTCM $ telView b
+      TelV gamma (El _ ctarget) <- liftTCM $ telViewPath b
       let Def d' es' = ignoreSharing ctarget
           cixs = drop (size pars) $ fromMaybe __IMPOSSIBLE__ $ allApplyElims es'
 

@@ -504,8 +504,11 @@ reduceTm env !constInfo allowNonTerminating hasRewriting zero suc = reduceB' 0
                               (es1, es2)  = splitAt m rest
                               vs          = es1
                       fallThrough = fromMaybe False (ffallThrough bs) && isJust (fcatchAllBranch bs)
+                      unblockCon (Blocked _ e@(Apply Arg{ unArg = Con{}})) = notBlocked e
+                      unblockCon e = e
+
                   -- Now do the matching on the @n@ths argument:
-                  in case eb of
+                  in case unblockCon eb of
                     Blocked x _ | fallThrough -> match' steps f $ catchAllFrame $ stack
                     Blocked x _       -> no (Blocked x) es'
                     NotBlocked blk elim ->
