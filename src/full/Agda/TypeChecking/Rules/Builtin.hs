@@ -902,6 +902,7 @@ bindBuiltinNoDef b q = inTopContext $ do
               , dataSort       = Inf
               , dataAbstr      = ConcreteDef
               , dataMutual     = Nothing
+              , dataPathCons   = []
               }
     Just{}  -> __IMPOSSIBLE__
     Nothing -> __IMPOSSIBLE__ -- typeError $ NoSuchBuiltinName b

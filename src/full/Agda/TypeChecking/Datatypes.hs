@@ -52,6 +52,13 @@ getConstructorData c = do
     Constructor{conData = d} -> return d
     _                        -> __IMPOSSIBLE__
 
+-- | Is the datatype of this constructor a Higher Inductive Type?
+--   Precondition: The argument must refer to a constructor of a datatype.
+consOfHIT :: QName -> TCM Bool
+consOfHIT c = do
+  d <- getConstructorData c
+  not . null . dataPathCons . theDef <$> getConstInfo d
+
 -- | @getConType c t@ computes the constructor parameters from type @t@
 --   and returns them plus the instantiated type of constructor @c@.
 --   This works also if @t@ is a function type ending in a data/record type;
