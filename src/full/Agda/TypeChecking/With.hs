@@ -451,6 +451,8 @@ stripWithClausePatterns cxtNames parent f t delta qs npars perm ps = do
 
         VarP _ x  -> (p :) <$> recurse (var (dbPatVarIndex x))
 
+        IApplyP{}  -> typeError $ GenericError $ "with clauses not supported in the presence of Path patterns" -- TODO maybe we can support them now?
+
         DotP o v  -> do
           (a, _) <- mustBePi t
           tell [ProblemEq (namedArg p) v a]
@@ -713,6 +715,7 @@ patsToElims = map $ toElim . fmap namedThing
 
     toTerm :: DeBruijnPattern -> DisplayTerm
     toTerm p = case p of
+      IApplyP o _ _ x -> DTerm $ var $ dbPatVarIndex x -- TODO, should be an Elim' DisplayTerm ?
       ProjP _ d   -> DDef d [] -- WRONG. TODO: convert spine to non-spine ... DDef d . defaultArg
       VarP PatODot x -> DDot  $ var $ dbPatVarIndex x
       VarP o x      -> DTerm  $ var $ dbPatVarIndex x

@@ -81,6 +81,7 @@ isTrivialPattern p = case p of
                       : (map (isTrivialPattern . namedArg) ps)
   LitP{}      -> return False
   ProjP{}     -> return False
+  IApplyP{}   -> return True
 
 -- | If matching succeeds, we return the instantiation of the clause pattern vector
 --   to obtain the split clause pattern vector, plus the literals of the clause patterns
@@ -170,6 +171,7 @@ yesMatchLit l (DotP o t) = maybe No (yesMatchLit l) $ buildPattern t
 yesMatchLit _ ConP{}   = No
 yesMatchLit _ ProjP{}  = No
 yesMatchLit _ LitP{}   = __IMPOSSIBLE__
+yesMatchLit _ IApplyP{} = No
 
 -- | Check if a clause could match given generously chosen literals
 matchLits :: Clause -> [NamedArg DeBruijnPattern] -> Maybe [Literal]
@@ -301,6 +303,7 @@ matchPat _    DotP{}   q = mempty
 matchPat mlit (LitP l) q = mlit l q
 matchPat _    (ProjP _ d) (ProjP _ d') = if d == d' then mempty else No
 matchPat _    ProjP{} _ = __IMPOSSIBLE__
+matchPat _    IApplyP{} q = Yes ([q],[])
 matchPat mlit p@(ConP c _ ps) q = case q of
   VarP _ x -> Block (Any False) [BlockingVar (dbPatVarIndex x) (Just [c])]
   ConP c' i qs
@@ -309,3 +312,4 @@ matchPat mlit p@(ConP c _ ps) q = case q of
   DotP o t  -> maybe No (matchPat mlit p) $ buildPattern t
   LitP _  -> __IMPOSSIBLE__  -- split clause has no literal patterns
   ProjP{} -> __IMPOSSIBLE__  -- excluded by typing
+  IApplyP _ _ _ x -> Block (Any False) [BlockingVar (dbPatVarIndex x) (Just [c])]

@@ -361,9 +361,12 @@ cover f cs sc@(SClause tel ps _ _ target) = do
            ConP  _ _ qs -> qs ++ gatherEtaSplits (-1) sc ps
            LitP  _      -> __IMPOSSIBLE__
            ProjP{}      -> __IMPOSSIBLE__
+           IApplyP{}    -> __IMPOSSIBLE__
        | otherwise ->
            updateNamedArg (\ _ -> p') p : gatherEtaSplits (n-1) sc ps
         where p' = lookupS (scSubst sc) $ dbPatVarIndex x
+      IApplyP{}   ->
+           updateNamedArg (applySubst (scSubst sc)) p : gatherEtaSplits (n-1) sc ps
       DotP  _ _    -> p : gatherEtaSplits (n-1) sc ps -- count dot patterns
       ConP  _ _ qs -> gatherEtaSplits n sc (qs ++ ps)
       LitP  _      -> gatherEtaSplits n sc ps
@@ -377,6 +380,7 @@ cover f cs sc@(SClause tel ps _ _ target) = do
       ConP c cpi qs -> SplitAt (p $> k) [(conName c , addEtaSplits k (qs ++ ps) t)]
       LitP  _       -> __IMPOSSIBLE__
       ProjP{}       -> __IMPOSSIBLE__
+      IApplyP{}     -> addEtaSplits (k+1) ps t
 
     etaRecordSplits :: Int -> [NamedArg DeBruijnPattern] -> (QName,SplitClause)
                     -> SplitTree -> (QName,SplitTree)

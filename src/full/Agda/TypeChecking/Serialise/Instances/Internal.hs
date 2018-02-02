@@ -402,6 +402,7 @@ instance EmbPrj a => EmbPrj (I.Pattern' a) where
   icod_ (LitP a    ) = icodeN 2 LitP a
   icod_ (DotP a b  ) = icodeN 3 DotP a b
   icod_ (ProjP a b ) = icodeN 4 ProjP a b
+  icod_ (IApplyP a b c d) = icodeN 5 IApplyP a b c d
 
   value = vcase valu where
     valu [0, a, b] = valuN VarP a b
@@ -409,6 +410,7 @@ instance EmbPrj a => EmbPrj (I.Pattern' a) where
     valu [2, a]    = valuN LitP a
     valu [3, a, b] = valuN DotP a b
     valu [4, a, b] = valuN ProjP a b
+    valu [5, a, b, c, d] = valuN IApplyP a b c d
     valu _         = malformed
 
 instance EmbPrj a => EmbPrj (Builtin a) where

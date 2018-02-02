@@ -71,6 +71,7 @@ recordPatternToProjections p =
       fields <- getRecordTypeFields (unArg t)
       concat <$> zipWithM comb (map proj fields) (map namedArg ps)
     ProjP{}      -> __IMPOSSIBLE__ -- copattern cannot appear here
+    IApplyP{}    -> typeError $ ShouldBeRecordPattern p
   where
     proj p = (`applyE` [Proj ProjSystem $ unArg p])
     comb :: (Term -> Term) -> DeBruijnPattern -> TCM [Term -> Term]
@@ -711,6 +712,7 @@ translatePattern p@VarP{} = removeTree (Leaf p)
 translatePattern p@DotP{} = removeTree (Leaf p)
 translatePattern p@LitP{} = return (p, [], [])
 translatePattern p@ProjP{}= return (p, [], [])
+translatePattern p@IApplyP{}= return (p, [], [])
 
 translatePatterns :: [NamedArg Pattern] -> RecPatM ([NamedArg Pattern], [Term], Changes)
 translatePatterns ps = do
@@ -755,6 +757,7 @@ recordTree p@VarP{} = return (Right (Leaf p))
 recordTree p@DotP{} = return (Right (Leaf p))
 recordTree p@LitP{} = return $ Left $ translatePattern p
 recordTree p@ProjP{}= return $ Left $ translatePattern p
+recordTree p@IApplyP{}= return $ Left $ translatePattern p
 
 ------------------------------------------------------------------------
 -- Translation of the clause telescope and body

@@ -151,6 +151,7 @@ instance IsFlexiblePattern (I.Pattern' a) where
       I.VarP{}  -> mzero
       I.LitP{}  -> mzero
       I.ProjP{} -> mzero
+      I.IApplyP{} -> mzero
 
 -- | Lists of flexible patterns are 'RecordFlex'.
 instance IsFlexiblePattern a => IsFlexiblePattern [a] where
@@ -1202,6 +1203,7 @@ noPatternMatchingOnCodata = mapM_ (check . namedArg)
   check (VarP {})   = return ()
   check (DotP {})   = return ()
   check (ProjP{})   = return ()
+  check (IApplyP{}) = return ()
   check (LitP {})   = return ()  -- Literals are assumed not to be coinductive.
   check (ConP con _ ps) = do
     reportSDoc "tc.lhs.top" 40 $

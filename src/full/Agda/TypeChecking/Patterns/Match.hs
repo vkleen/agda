@@ -189,6 +189,8 @@ matchPattern :: DeBruijnPattern
              -> ReduceM (Match Term, Arg Term)
 matchPattern p u = case (p, u) of
   (ProjP{}, _            ) -> __IMPOSSIBLE__
+  (IApplyP _ _ _ x , arg ) -> return (Yes NoSimplification entry, arg)
+    where entry = singleton (dbPatVarIndex x, arg)
   (VarP _ x , arg          ) -> return (Yes NoSimplification entry, arg)
     where entry = singleton (dbPatVarIndex x, arg)
   (DotP _ _ , arg@(Arg _ v)) -> return (Yes NoSimplification empty, arg)

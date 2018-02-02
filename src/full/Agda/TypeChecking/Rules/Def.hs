@@ -587,7 +587,7 @@ checkBodyEndPoints delta t self es body = do
          cs' <- updateBoundary cs $ \ b -> return $ b `applyE` [IApply x y r]
          accumBoundary ((i,(x,y)):cs') es t' self'
        _ -> __IMPOSSIBLE__
-   accumBoundary cs (IApply{}  : es) t self = __IMPOSSIBLE__ -- we will get Apply for Path too.
+   accumBoundary cs (IApply _ _ x  : es) t self = accumBoundary cs (Apply (defaultArg x) : es) t self
    updateBoundary bs f = forM bs $ \ (i,(x,y)) -> do
                                       x <- f x
                                       y <- f y

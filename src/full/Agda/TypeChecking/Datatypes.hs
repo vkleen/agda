@@ -53,11 +53,15 @@ getConstructorData c = do
     _                        -> __IMPOSSIBLE__
 
 -- | Is the datatype of this constructor a Higher Inductive Type?
---   Precondition: The argument must refer to a constructor of a datatype.
+--   Precondition: The argument must refer to a constructor of a datatype or record.
 consOfHIT :: QName -> TCM Bool
 consOfHIT c = do
   d <- getConstructorData c
-  not . null . dataPathCons . theDef <$> getConstInfo d
+  def <- theDef <$> getConstInfo d
+  case def of
+    Datatype {dataPathCons = xs} -> return $ not $ null xs
+    Record{} -> return False
+    _  -> __IMPOSSIBLE__
 
 -- | @getConType c t@ computes the constructor parameters from type @t@
 --   and returns them plus the instantiated type of constructor @c@.
