@@ -937,6 +937,7 @@ instance Subst DeBruijnPattern DeBruijnPattern where
           ConP{}  -> __IMPOSSIBLE__
           LitP{}  -> __IMPOSSIBLE__
           ProjP{} -> __IMPOSSIBLE__
+          (IApplyP _ t u x) -> IApplyP o t u x
 
 instance Subst Term Range where
   applySubst _ = id

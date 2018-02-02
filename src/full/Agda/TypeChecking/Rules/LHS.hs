@@ -1036,7 +1036,7 @@ checkLHS mf st@(LHSState tel ip problem target psplit) = do
         _ -> return ()
 
       -- The type of the constructor will end in an application of the datatype
-      TelV gamma (El _ ctarget) <- liftTCM $ telViewPath b
+      (TelV gamma (El _ ctarget), boundary) <- liftTCM $ telViewUpToPathBoundary' const (-1) b
       let Def d' es' = ignoreSharing ctarget
           cixs = drop (size pars) $ fromMaybe __IMPOSSIBLE__ $ allApplyElims es'
 
@@ -1146,7 +1146,7 @@ checkLHS mf st@(LHSState tel ip problem target psplit) = do
                                    , conPLazy   = False }
 
           -- compute final context and substitution
-          let crho2   = ConP c cpi $ applySubst rho2 $ teleNamedArgs gamma
+          let crho2   = ConP c cpi $ applySubst rho2 $ (teleNamedArgs gamma `addBoundary` boundary)
               rho3    = consS crho2 rho1
               delta2' = applyPatSubst rho3 delta2
               delta'  = delta1' `abstract` delta2'

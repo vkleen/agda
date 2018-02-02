@@ -7,7 +7,7 @@ import Prelude hiding (null)
 import Control.Applicative hiding (empty)
 import Control.Monad (unless, guard)
 
-import Data.Foldable (forM_)
+import Data.Foldable (forM_, find)
 import Data.IntSet (IntSet)
 import qualified Data.IntSet as IntSet
 import qualified Data.List as List
@@ -352,20 +352,24 @@ type Boundary = [(Term,(Term,Term))]
 -- | Like @telViewUpToPath@ but also returns the @Boundary@ expected
 -- by the Path types encountered. The boundary terms live in the
 -- telescope given by the @TelView@.
-telViewUpToPathBoundary :: Int -> Type -> TCM (TelView,Boundary)
-telViewUpToPathBoundary 0 t = return $ (TelV EmptyTel t,[])
-telViewUpToPathBoundary n t = do
+telViewUpToPathBoundary' :: ((Term,Term) -> Args -> (Term,Term)) -> Int -> Type -> TCM (TelView,Boundary)
+telViewUpToPathBoundary' app 0 t = return $ (TelV EmptyTel t,[])
+telViewUpToPathBoundary' app n t = do
   vt <- pathViewAsPi' $ t
   case vt of
-    Left ((a,b),xy) -> addEndPoints xy . absV a (absName b) <$> telViewUpToPathBoundary (n - 1) (absBody b)
+    Left ((a,b),xy) -> addEndPoints xy . absV a (absName b) <$> telViewUpToPathBoundary' app (n - 1) (absBody b)
     Right (El _ t) | Pi a b <- ignoreSharing t
-                   -> absV a (absName b) <$> telViewUpToPathBoundary (n - 1) (absBody b)
-    _              -> return $ (TelV EmptyTel t,[])
+                   -> absV a (absName b) <$> telViewUpToPathBoundary' app (n - 1) (absBody b)
+    Right t        -> return $ (TelV EmptyTel t,[])
   where
     absV a x (TelV tel t, cs) = (TelV (ExtendTel a (Abs x tel)) t, cs)
     addEndPoints xy (telv@(TelV tel _),cs) = (telv, (var $ size tel - 1, xyInTel):cs)
       where
-       xyInTel = raise (size tel) xy `apply` drop 1 (teleArgs tel)
+       xyInTel = raise (size tel) xy `app` drop 1 (teleArgs tel)
+
+telViewUpToPathBoundary :: Int -> Type -> TCM (TelView,Boundary)
+telViewUpToPathBoundary = telViewUpToPathBoundary' apply
+
 
 pathViewAsPi :: Type -> TCM (Either (Dom Type, Abs Type) Type)
 pathViewAsPi t = either (Left . fst) Right <$> pathViewAsPi' t
@@ -405,6 +409,30 @@ telView'Path = telView'UpToPath (-1)
 
 isPath :: Type -> TCM (Maybe (Dom Type, Abs Type))
 isPath t = either Just (const Nothing) <$> pathViewAsPi t
+
+addBoundary :: [NamedArg DeBruijnPattern] -> Boundary -> [NamedArg DeBruijnPattern]
+addBoundary xs [] = xs
+addBoundary xs boundary = recurse xs
+  where
+    recurse :: [NamedArg DeBruijnPattern] -> [NamedArg DeBruijnPattern]
+    recurse = (fmap . fmap . fmap) updatePat
+    matchVar x =
+      snd <$> flip find boundary (\case
+        (Var i [],_) -> i == x
+        _            -> __IMPOSSIBLE__)
+    updatePat :: DeBruijnPattern -> DeBruijnPattern
+    updatePat p =
+      case p of
+        (VarP o x) | Just (t,u) <- matchVar (dbPatVarIndex x)
+                     -> IApplyP o t u x
+                   | otherwise -> p
+        LitP{} -> p
+        ProjP{} -> p
+        IApplyP o t u x
+          | Just _ <- matchVar (dbPatVarIndex x) -> __IMPOSSIBLE__
+          | otherwise -> p
+        DotP{} -> p
+        ConP c cpi ps -> ConP c cpi (recurse ps)
 
 -- | Decomposing a function type.
 

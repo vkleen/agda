@@ -644,6 +644,33 @@ checkClause t withSub c@(A.Clause (A.SpineLHS i x aps) strippedPats rhs0 wh catc
         -- Note that the with function doesn't necessarily share any part of
         -- the context with the parent (but withSub will take you from parent
         -- to child).
+        let
+          iApplyVars :: [NamedArg DeBruijnPattern] -> [(Int, (Term,Term))]
+          iApplyVars ps = flip concatMap (map namedArg ps) $ \case
+                             IApplyP _ t u x -> [(dbPatVarIndex x,(t,u))]
+                             VarP{} -> []
+                             ProjP{}-> []
+                             LitP{} -> []
+                             DotP{} -> []
+                             ConP _ _ ps -> iApplyVars ps
+
+        flip (maybe (return ())) body $ \ body ->
+          forM_ (iApplyVars ps) $ \ (i,tu) -> do
+            unview <- intervalUnview'
+            let phi = unview $ IMax (argN $ var $ i) $ argN $ unview (INeg $ argN $ var i)
+            reportSDoc "tc.lhs.newbounds" 10 $ vcat
+              [ text "equalTermOnFace:"
+              , nest 2 $ vcat
+                [ prettyTCM phi
+                , prettyTCM (unArg trhs)
+                , prettyTCM (Def x (patternsToElims ps))
+                , prettyTCM body
+                , prettyTCM tu
+                ]
+              ]
+            locally eRange (const noRange) $
+              equalTermOnFace phi (unArg trhs) (Def x (patternsToElims ps)) body
+
         inTopContext $ Bench.billTo [Bench.Typing, Bench.With] $ checkWithFunction cxtNames with
         (let ps' = patternsToElims ps
              self = Def x []
