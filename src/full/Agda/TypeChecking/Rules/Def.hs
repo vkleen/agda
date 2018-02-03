@@ -658,16 +658,6 @@ checkClause t withSub c@(A.Clause (A.SpineLHS i x aps) strippedPats rhs0 wh catc
           forM_ (iApplyVars ps) $ \ (i,tu) -> do
             unview <- intervalUnview'
             let phi = unview $ IMax (argN $ var $ i) $ argN $ unview (INeg $ argN $ var i)
-            reportSDoc "tc.lhs.newbounds" 10 $ vcat
-              [ text "equalTermOnFace:"
-              , nest 2 $ vcat
-                [ prettyTCM phi
-                , prettyTCM (unArg trhs)
-                , prettyTCM (Def x (patternsToElims ps))
-                , prettyTCM body
-                , prettyTCM tu
-                ]
-              ]
             locally eRange (const noRange) $
               equalTermOnFace phi (unArg trhs) (Def x (patternsToElims ps)) body
 

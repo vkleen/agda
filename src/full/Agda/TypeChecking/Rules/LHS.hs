@@ -1040,6 +1040,9 @@ checkLHS mf st@(LHSState tel ip problem target psplit) = do
       let Def d' es' = ignoreSharing ctarget
           cixs = drop (size pars) $ fromMaybe __IMPOSSIBLE__ $ allApplyElims es'
 
+      -- Δ₁Γ ⊢ boundary
+      reportSDoc "tc.lhs.split.con" 50 $ text "  boundary = " <+> prettyTCM boundary
+
       unless (d == d') {-'-} __IMPOSSIBLE__
 
       -- Get names for the constructor arguments from the user patterns
@@ -1094,15 +1097,15 @@ checkLHS mf st@(LHSState tel ip problem target psplit) = do
       --        Δ₁' ⊢ ρ₁ : Δ₁
       --        Δ₁' ⊢ ρ₂ : Γρ₁
       -- Application of the constructor c gives
-      --        Δ₁' ⊢ c ρ₂ : (D pars cixs)(ρ₁;ρ₂)
+      --        Δ₁' ⊢ (c Γ)(ρ₀) : (D pars cixs)(ρ₁;ρ₂)
       -- We have
       --        cixs(ρ₁;ρ₂)
       --         ≡ cixs(ρ₀)   (since ρ₀=ρ₁;ρ₂)
       --         ≡ ixs(ρ₀)    (by unification)
       --         ≡ ixs(ρ₁)    (since ixs doesn't actually depend on Γ)
-      -- so     Δ₁' ⊢ c ρ₂ : (D pars ixs)ρ₁
+      -- so     Δ₁' ⊢ (c Γ)(ρ₀) : (D pars ixs)ρ₁
       -- Putting this together with ρ₁ gives ρ₃ = ρ₁;c ρ₂
-      --        Δ₁' ⊢ ρ₁;c ρ₂ : Δ₁(x : D vs ws)
+      --        Δ₁' ⊢ ρ₁;(c Γ)(ρ₀) : Δ₁(x : D vs ws)
       -- and lifting over Δ₂ gives the final substitution ρ = ρ₃;Δ₂
       -- from Δ' = Δ₁';Δ₂ρ₃
       --        Δ' ⊢ ρ : Δ₁(x : D vs ws)Δ₂
@@ -1146,19 +1149,19 @@ checkLHS mf st@(LHSState tel ip problem target psplit) = do
                                    , conPLazy   = False }
 
           -- compute final context and substitution
-          let crho2   = ConP c cpi $ applySubst rho2 $ (teleNamedArgs gamma `addBoundary` boundary)
-              rho3    = consS crho2 rho1
+          let crho    = ConP c cpi $ applySubst rho0 $ (teleNamedArgs gamma `addBoundary` boundary)
+              rho3    = consS crho rho1
               delta2' = applyPatSubst rho3 delta2
               delta'  = delta1' `abstract` delta2'
               rho     = liftS (size delta2) rho3
 
           reportSDoc "tc.lhs.top" 20 $ addContext delta1' $ nest 2 $ vcat
-            [ text "crho2   =" <+> prettyTCM crho2
+            [ text "crho    =" <+> prettyTCM crho
             , text "rho3    =" <+> prettyTCM rho3
             , text "delta2' =" <+> prettyTCM delta2'
             ]
           reportSDoc "tc.lhs.top" 70 $ addContext delta1' $ nest 2 $ vcat
-            [ text "crho2   =" <+> pretty crho2
+            [ text "crho    =" <+> pretty crho
             , text "rho3    =" <+> pretty rho3
             , text "delta2' =" <+> pretty delta2'
             ]
