@@ -1036,7 +1036,7 @@ checkLHS mf st@(LHSState tel ip problem target psplit) = do
         _ -> return ()
 
       -- The type of the constructor will end in an application of the datatype
-      (TelV gamma (El _ ctarget), boundary) <- liftTCM $ telViewUpToPathBoundary' const (-1) b
+      (TelV gamma (El _ ctarget), boundary) <- liftTCM $ telViewPathBoundaryP b
       let Def d' es' = ignoreSharing ctarget
           cixs = drop (size pars) $ fromMaybe __IMPOSSIBLE__ $ allApplyElims es'
 

@@ -352,6 +352,9 @@ type Boundary = [(Term,(Term,Term))]
 -- | Like @telViewUpToPath@ but also returns the @Boundary@ expected
 -- by the Path types encountered. The boundary terms live in the
 -- telescope given by the @TelView@.
+-- In @telViewUpToPathBoundary' app n t@ the app function is used to
+-- apply the endpoints of the boundary to the bindings that come later
+-- in the telescope.
 telViewUpToPathBoundary' :: ((Term,Term) -> Args -> (Term,Term)) -> Int -> Type -> TCM (TelView,Boundary)
 telViewUpToPathBoundary' app 0 t = return $ (TelV EmptyTel t,[])
 telViewUpToPathBoundary' app n t = do
@@ -367,9 +370,26 @@ telViewUpToPathBoundary' app n t = do
       where
        xyInTel = raise (size tel) xy `app` drop 1 (teleArgs tel)
 
+-- | @(TelV Γ b, [(i,t_i,u_i)]) <- telViewUpToPathBoundary n a@
+--  Input:  Δ ⊢ a
+--  Output: ΔΓ ⊢ b
+--          ΔΓ ⊢ i : I
+--          ΔΓ ⊢ [ (i=0) -> t_i; (i=1) -> u_i ] : b
 telViewUpToPathBoundary :: Int -> Type -> TCM (TelView,Boundary)
 telViewUpToPathBoundary = telViewUpToPathBoundary' apply
 
+-- | @(TelV Γ b, [(i,t_i,u_i)]) <- telViewUpToPathBoundaryP n a@
+--  Input:  Δ ⊢ a
+--  Output: Δ.Γ ⊢ b
+--          Δ.Γ ⊢ T is the codomain of the PathP at variable i
+--          Δ.Γ ⊢ i : I
+--          Δ.Γ ⊢ [ (i=0) -> t_i; (i=1) -> u_i ] : T
+-- Useful to reconstruct IApplyP patterns after teleNamedArgs Γ.
+telViewUpToPathBoundaryP :: Int -> Type -> TCM (TelView,Boundary)
+telViewUpToPathBoundaryP = telViewUpToPathBoundary' const
+
+telViewPathBoundaryP :: Type -> TCM (TelView,Boundary)
+telViewPathBoundaryP = telViewUpToPathBoundaryP (-1)
 
 pathViewAsPi :: Type -> TCM (Either (Dom Type, Abs Type) Type)
 pathViewAsPi t = either (Left . fst) Right <$> pathViewAsPi' t
