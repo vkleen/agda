@@ -571,7 +571,8 @@ stripWithClausePatterns cxtNames parent f t delta qs npars perm ps = do
           Defn {defType = ct, theDef = Constructor{conPars = np}}  <- getConInfo c
           -- Compute the argument telescope for the constructor
           let ct' = ct `piApply` take np us
-          TelV tel' _ <- liftTCM $ telView ct'
+          TelV tel' _ <- liftTCM $ telViewPath ct'
+          -- (TelV tel' _, _boundary) <- liftTCM $ telViewPathBoundaryP ct'
 
           reportSDoc "tc.with.strip" 20 $
             vcat [ text "ct  = " <+> prettyTCM ct
@@ -581,6 +582,7 @@ stripWithClausePatterns cxtNames parent f t delta qs npars perm ps = do
                  , text "us' = " <+> prettyList (map prettyTCM $ take np us)
                  ]
 
+          -- TODO Andrea: preserve IApplyP patterns in v, see _boundary?
           -- Compute the new type
           let v  = Con c ci [ Apply $ Arg info (var i) | (i, Arg info _) <- zip (downFrom $ size qs') qs' ]
               t' = tel' `abstract` absApp (raise (size tel') b) v
