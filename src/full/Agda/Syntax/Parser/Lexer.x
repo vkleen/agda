@@ -235,6 +235,7 @@ tokens :-
 -- Literals
 <0,code> \'             { litChar }
 <0,code,pragma_> \"     { litString }
+<0,code> \"\"\"\n       { litMultiLineString }
 <0,code> @integer       { literal LitNat }
 <0,code> @float         { literal LitFloat }
 

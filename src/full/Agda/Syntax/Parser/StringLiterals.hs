@@ -2,7 +2,7 @@
     as in GHC.
 -}
 module Agda.Syntax.Parser.StringLiterals
-    ( litString, litChar
+    ( litString, litChar, litMultiLineString
     ) where
 
 import Data.Char
@@ -39,6 +39,13 @@ litChar = stringToken '\'' $ \i s ->
                     _   -> lexError
                             "character literal must contain a single character"
 
+litMultiLineString :: LexAction Token
+litMultiLineString _ inp' _ =
+  do setLastPos (backupPos $ lexPos inp')
+     setLexInput inp'
+     tok <- runLookAhead litError $ lexMultiLineString ""
+     i <- getParseInterval
+     return $ TokLiteral $ LitString (getRange i) tok
 
 {--------------------------------------------------------------------------
     Errors
@@ -93,6 +100,30 @@ lexString del s =
             do  rollback
                 c <- lexChar
                 lexString del (c:s)
+
+lexMultiLineString :: String -> LookAhead String
+lexMultiLineString s =
+  do c <- nextChar
+     case c of
+       c | c == '\n' -> do sync
+                           b <- lookForEnd 0
+                           if b
+                             then sync >> (return $ reverse (c:s))
+                             else rollback >> lexMultiLineString (c:s)
+
+       _             -> normalChar
+  where
+    normalChar = do rollback
+                    c <- lexChar
+                    lexMultiLineString (c:s)
+
+    lookForEnd n =
+      do c <- nextChar
+         case c of
+           c   | isSpace c -> lookForEnd n
+           '"' | n == 2    -> return True
+           '"' | n < 2     -> lookForEnd (n+1)
+           otherwise       -> return False
 
 
 -- | A string gap consists of whitespace (possibly including line breaks)
